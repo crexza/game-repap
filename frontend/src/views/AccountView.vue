@@ -6,8 +6,12 @@ import { useAuthStore } from '../stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-onMounted(() => {
-  authStore.loadProfile()
+onMounted(async () => {
+  const success = await authStore.loadProfile()
+
+  if (!success) {
+    router.push('/login')
+  }
 })
 
 function logout() {
@@ -19,7 +23,9 @@ function logout() {
 <template>
   <section class="bg-light py-5 min-vh-100">
     <div class="container">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-5">
+      <div
+        class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-5"
+      >
         <div>
           <span class="badge bg-primary mb-2">
             My Account
@@ -48,20 +54,29 @@ function logout() {
               </h2>
 
               <dl class="row mb-0">
-                <dt class="col-sm-4 text-muted mb-3">Name</dt>
+                <dt class="col-sm-4 text-muted mb-3">
+                  Name
+                </dt>
+
                 <dd class="col-sm-8 mb-3">
                   {{ authStore.user?.name }}
                 </dd>
 
-                <dt class="col-sm-4 text-muted mb-3">Email</dt>
+                <dt class="col-sm-4 text-muted mb-3">
+                  Email
+                </dt>
+
                 <dd class="col-sm-8 mb-3">
                   {{ authStore.user?.email }}
                 </dd>
 
-                <dt class="col-sm-4 text-muted mb-3">Role</dt>
+                <dt class="col-sm-4 text-muted mb-3">
+                  Role
+                </dt>
+
                 <dd class="col-sm-8 mb-3">
                   <span
-                    class="badge"
+                    class="badge text-capitalize"
                     :class="authStore.isAdmin ? 'bg-danger' : 'bg-primary'"
                   >
                     {{ authStore.user?.role }}
@@ -91,22 +106,39 @@ function logout() {
 
                 <div class="col-12 col-sm-6">
                   <RouterLink
-                    to="/shop"
+                    to="/orders"
                     class="btn btn-outline-primary w-100 py-3"
+                  >
+                    📦 View Order History
+                  </RouterLink>
+                </div>
+
+                <div class="col-12">
+                  <RouterLink
+                    to="/shop"
+                    class="btn btn-primary w-100 py-3"
                   >
                     🎮 Continue Shopping
                   </RouterLink>
                 </div>
 
-                <div class="col-12">
-                  <div class="alert alert-secondary mb-0">
-                    Order history will be connected after the checkout function is completed.
+                <div
+                  v-if="authStore.isAdmin"
+                  class="col-12"
+                >
+                  <div class="alert alert-danger mb-0" role="alert">
+                    <strong>Admin account detected.</strong>
+                    Product management dashboard will be added next.
                   </div>
                 </div>
 
-                <div v-if="authStore.isAdmin" class="col-12">
-                  <div class="alert alert-danger mb-0">
-                    Admin account detected. Product management dashboard will be added next.
+                <div
+                  v-else
+                  class="col-12"
+                >
+                  <div class="alert alert-light border mb-0" role="status">
+                    Complete your purchase from the cart, then view your
+                    transaction record in Order History.
                   </div>
                 </div>
               </div>

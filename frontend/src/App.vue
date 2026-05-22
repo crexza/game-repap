@@ -57,6 +57,13 @@ function logout() {
           </RouterLink>
 
           <template v-if="authStore.isLoggedIn">
+
+            <RouterLink
+              class="btn btn-outline-light ms-lg-2 mt-2 mt-lg-0"
+              to="/orders"
+            >
+              📦 Orders
+            </RouterLink>
             <RouterLink
               class="btn btn-primary ms-lg-2 mt-2 mt-lg-0"
               to="/account"

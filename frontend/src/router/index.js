@@ -3,9 +3,11 @@ import HomeView from '../views/HomeView.vue'
 import ShopView from '../views/ShopView.vue'
 import ProductDetailView from '../views/ProductDetailView.vue'
 import CartView from '../views/CartView.vue'
+import CheckoutView from '../views/CheckoutView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import AccountView from '../views/AccountView.vue'
+import OrderHistoryView from '../views/OrderHistoryView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -34,6 +36,14 @@ const router = createRouter({
       component: CartView
     },
     {
+      path: '/checkout',
+      name: 'checkout',
+      component: CheckoutView,
+      meta: {
+        requiresAuth: true
+      }
+    },
+    {
       path: '/login',
       name: 'login',
       component: LoginView
@@ -47,6 +57,14 @@ const router = createRouter({
       path: '/account',
       name: 'account',
       component: AccountView,
+      meta: {
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/orders',
+      name: 'orders',
+      component: OrderHistoryView,
       meta: {
         requiresAuth: true
       }
