@@ -1,12 +1,23 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useCartStore } from './stores/cart'
+import { useAuthStore } from './stores/auth'
 
+const router = useRouter()
 const cartStore = useCartStore()
+const authStore = useAuthStore()
+
+function logout() {
+  authStore.logout()
+  router.push('/')
+}
 </script>
 
 <template>
-  <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-absolute m-2">
+  <a
+    href="#main-content"
+    class="visually-hidden-focusable btn btn-primary position-absolute m-2"
+  >
     Skip to main content
   </a>
 
@@ -44,6 +55,39 @@ const cartStore = useCartStore()
               {{ cartStore.itemCount }}
             </span>
           </RouterLink>
+
+          <template v-if="authStore.isLoggedIn">
+            <RouterLink
+              class="btn btn-primary ms-lg-2 mt-2 mt-lg-0"
+              to="/account"
+            >
+              👤 {{ authStore.user.name }}
+            </RouterLink>
+
+            <button
+              type="button"
+              class="btn btn-outline-danger ms-lg-2 mt-2 mt-lg-0"
+              @click="logout"
+            >
+              Logout
+            </button>
+          </template>
+
+          <template v-else>
+            <RouterLink
+              class="btn btn-outline-light ms-lg-2 mt-2 mt-lg-0"
+              to="/login"
+            >
+              Login
+            </RouterLink>
+
+            <RouterLink
+              class="btn btn-primary ms-lg-2 mt-2 mt-lg-0"
+              to="/register"
+            >
+              Register
+            </RouterLink>
+          </template>
         </div>
       </div>
     </div>

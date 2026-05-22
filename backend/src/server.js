@@ -1,7 +1,9 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
+import bcrypt from 'bcryptjs'
 import { pool, initialiseDatabase } from './db.js'
+import { createToken, requireAuth } from './auth.js'
 
 const app = express()
 const port = Number(process.env.PORT) || 3000
@@ -13,12 +15,9 @@ const allowedOrigins = (
   .map((origin) => origin.trim())
   .filter(Boolean)
 
-// Middleware
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow browser requests from the Vue frontend
-      // Also allow requests without origin, such as direct browser API testing
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true)
       } else {
@@ -30,12 +29,21 @@ app.use(
 
 app.use(express.json())
 
-// Convert PostgreSQL numeric values into normal JavaScript numbers
 function formatProduct(product) {
   return {
     ...product,
     price: Number(product.price),
     rating: Number(product.rating)
+  }
+}
+
+function formatUser(user) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    created_at: user.created_at
   }
 }
 
@@ -47,7 +55,7 @@ app.get('/', (_req, res) => {
   })
 })
 
-// Health check route
+// Health check
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
@@ -60,7 +68,6 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/products', async (req, res) => {
   try {
     const { platform = '', search = '', featured = '' } = req.query
-
     const values = []
     const filters = []
 
@@ -103,7 +110,7 @@ app.get('/api/products', async (req, res) => {
   }
 })
 
-// Get one product for the Product Detail page
+// Get one product
 app.get('/api/products/:id', async (req, res) => {
   try {
     const productId = Number(req.params.id)
@@ -139,6 +146,139 @@ app.get('/api/products/:id', async (req, res) => {
   }
 })
 
+// Register new customer account
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim()
+    const email = String(req.body.email || '').trim().toLowerCase()
+    const password = String(req.body.password || '')
+
+    if (name.length < 2) {
+      return res.status(400).json({
+        message: 'Name must contain at least 2 characters.'
+      })
+    }
+
+    if (!email.includes('@')) {
+      return res.status(400).json({
+        message: 'Please enter a valid email address.'
+      })
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: 'Password must contain at least 6 characters.'
+      })
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10)
+
+    const result = await pool.query(
+      `
+      INSERT INTO users (name, email, password_hash, role)
+      VALUES ($1, $2, $3, 'customer')
+      RETURNING id, name, email, role, created_at
+      `,
+      [name, email, passwordHash]
+    )
+
+    const user = formatUser(result.rows[0])
+
+    res.status(201).json({
+      message: 'Registration successful.',
+      token: createToken(user),
+      user
+    })
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({
+        message: 'An account with this email already exists.'
+      })
+    }
+
+    console.error('Registration failed:', error.message)
+
+    res.status(500).json({
+      message: 'Unable to register account.'
+    })
+  }
+})
+
+// Login customer or admin
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase()
+    const password = String(req.body.password || '')
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM users
+      WHERE email = $1
+      `,
+      [email]
+    )
+
+    const user = result.rows[0]
+
+    if (!user) {
+      return res.status(401).json({
+        message: 'Incorrect email or password.'
+      })
+    }
+
+    const passwordCorrect = await bcrypt.compare(password, user.password_hash)
+
+    if (!passwordCorrect) {
+      return res.status(401).json({
+        message: 'Incorrect email or password.'
+      })
+    }
+
+    const safeUser = formatUser(user)
+
+    res.json({
+      message: 'Login successful.',
+      token: createToken(safeUser),
+      user: safeUser
+    })
+  } catch (error) {
+    console.error('Login failed:', error.message)
+
+    res.status(500).json({
+      message: 'Unable to log in.'
+    })
+  }
+})
+
+// Get logged-in user profile
+app.get('/api/users/profile', requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT id, name, email, role, created_at
+      FROM users
+      WHERE id = $1
+      `,
+      [req.user.id]
+    )
+
+    if (!result.rows[0]) {
+      return res.status(404).json({
+        message: 'User account not found.'
+      })
+    }
+
+    res.json(formatUser(result.rows[0]))
+  } catch (error) {
+    console.error('Unable to load profile:', error.message)
+
+    res.status(500).json({
+      message: 'Unable to load user profile.'
+    })
+  }
+})
+
 // Handle unknown API routes
 app.use('/api', (_req, res) => {
   res.status(404).json({
@@ -146,7 +286,7 @@ app.use('/api', (_req, res) => {
   })
 })
 
-// Handle server errors such as blocked CORS origins
+// General error handling
 app.use((error, _req, res, _next) => {
   console.error('Server error:', error.message)
 
@@ -155,7 +295,7 @@ app.use((error, _req, res, _next) => {
   })
 })
 
-// Start backend after preparing database tables and initial product data
+// Start backend
 try {
   await initialiseDatabase()
 
