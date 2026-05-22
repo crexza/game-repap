@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment secret files
+.env
+.env.local
+.env.production
+
+# Frontend build output
+dist/
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
