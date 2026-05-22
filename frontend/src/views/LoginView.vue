@@ -34,7 +34,7 @@ async function submitLogin() {
           </span>
 
           <h1 class="display-6 fw-bold">
-            Log in to GameVault
+            Log in to Gameripap
           </h1>
 
           <p class="text-muted lead">
@@ -114,7 +114,7 @@ async function submitLogin() {
               </form>
 
               <p class="text-center text-muted mt-4 mb-0">
-                New to GameVault?
+                New to Gameripap?
                 <RouterLink to="/register" class="fw-semibold">
                   Create an account
                 </RouterLink>

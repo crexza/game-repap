@@ -31,7 +31,7 @@ onMounted(async () => {
           </span>
 
           <h1 class="display-4 fw-bold">
-            GameVault Malaysia
+            Gameripap Malaysia
           </h1>
 
           <p class="lead text-white-50 mt-3">
@@ -52,9 +52,11 @@ onMounted(async () => {
 
         <div class="col-12 col-lg-6 text-center">
           <div class="rounded-4 p-5 bg-primary-subtle text-dark shadow-lg">
-            <div style="font-size: 5rem">
-              🎮
-            </div>
+            <img
+                src="/images/branding/gameripap-hero-icon.png"
+                alt="Gameripap gaming icon"
+                class="hero-brand-icon"
+                />
 
             <h2 class="fw-bold mt-3">
               Physical Console Games

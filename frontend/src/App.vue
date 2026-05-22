@@ -23,8 +23,16 @@ function logout() {
 
   <nav class="navbar navbar-expand-lg navbar-dark bg-black shadow-sm sticky-top">
     <div class="container">
-      <RouterLink class="navbar-brand fw-bold" to="/">
-        🎮 GameVault
+      <RouterLink class="navbar-brand d-flex align-items-center gap-2 fw-bold" to="/">
+        <img
+          src="/images/branding/gameripap-logo.png"
+          alt="Gameripap logo"
+          width="46"
+          height="46"
+          class="rounded"
+        />
+
+        <span>Gameripap</span>
       </RouterLink>
 
       <button
@@ -114,6 +122,13 @@ function logout() {
       </div>
     </div>
   </nav>
+
+  <section class="page-brand-banner" aria-label="Gameripap promotional banner">
+  <img
+    src="/images/branding/gameripap-page-banner.png"
+    alt="Gameripap gaming store banner"
+  />
+</section>
 
   <main id="main-content">
     <RouterView />

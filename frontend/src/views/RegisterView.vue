@@ -46,7 +46,7 @@ async function submitRegistration() {
           </span>
 
           <h1 class="display-6 fw-bold">
-            Create your GameVault account
+            Create your Gameripap account
           </h1>
 
           <p class="text-muted lead">
