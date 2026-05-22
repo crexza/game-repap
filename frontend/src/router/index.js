@@ -8,6 +8,8 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import AccountView from '../views/AccountView.vue'
 import OrderHistoryView from '../views/OrderHistoryView.vue'
+import AdminDashboardView from '../views/AdminDashboardView.vue'
+import AdminOrdersView from '../views/AdminOrdersView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -68,14 +70,40 @@ const router = createRouter({
       meta: {
         requiresAuth: true
       }
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: AdminDashboardView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
+    {
+      path: '/admin/orders',
+      name: 'admin-orders',
+      component: AdminOrdersView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true
+      }
     }
   ]
 })
 
 router.beforeEach((to) => {
-  const storedAuth = localStorage.getItem('gamevault_auth')
-  const session = storedAuth ? JSON.parse(storedAuth) : null
+  let session = null
+
+  try {
+    const storedAuth = localStorage.getItem('gamevault_auth')
+    session = storedAuth ? JSON.parse(storedAuth) : null
+  } catch {
+    localStorage.removeItem('gamevault_auth')
+  }
+
   const isLoggedIn = Boolean(session?.token)
+  const isAdmin = session?.user?.role === 'admin'
 
   if (to.meta.requiresAuth && !isLoggedIn) {
     return {
@@ -84,6 +112,10 @@ router.beforeEach((to) => {
         redirect: to.fullPath
       }
     }
+  }
+
+  if (to.meta.requiresAdmin && !isAdmin) {
+    return '/account'
   }
 
   if ((to.path === '/login' || to.path === '/register') && isLoggedIn) {

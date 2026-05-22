@@ -123,15 +123,21 @@ function logout() {
                 </div>
 
                 <div
-                  v-if="authStore.isAdmin"
-                  class="col-12"
-                >
-                  <div class="alert alert-danger mb-0" role="alert">
-                    <strong>Admin account detected.</strong>
-                    Product management dashboard will be added next.
-                  </div>
-                </div>
+                    v-if="authStore.isAdmin"
+                    class="col-12"
+                    >
+                    <div class="alert alert-danger mb-3" role="alert">
+                        <strong>Admin account detected.</strong>
+                        You can manage products, inventory and dashboard statistics.
+                    </div>
 
+                    <RouterLink
+                        to="/admin"
+                        class="btn btn-danger w-100 py-3"
+                    >
+                        ⚙️ Open Admin Dashboard
+                    </RouterLink>
+                    </div>
                 <div
                   v-else
                   class="col-12"

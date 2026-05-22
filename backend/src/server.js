@@ -3,8 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import bcrypt from 'bcryptjs'
 import { pool, initialiseDatabase } from './db.js'
-import { createToken, requireAuth } from './auth.js'
-
+import { createToken, requireAuth, requireAdmin } from './auth.js'
 const app = express()
 const port = Number(process.env.PORT) || 3000
 
@@ -492,6 +491,403 @@ app.get('/api/orders', requireAuth, async (req, res) => {
 
     res.status(500).json({
       message: 'Unable to load order history.'
+    })
+  }
+})
+
+// Get admin dashboard summary
+app.get('/api/admin/summary', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const productResult = await pool.query(`
+      SELECT COUNT(*) AS total_products
+      FROM products
+    `)
+
+    const orderResult = await pool.query(`
+      SELECT
+        COUNT(*) AS total_orders,
+        COALESCE(SUM(total), 0) AS total_revenue
+      FROM orders
+    `)
+
+    const customerResult = await pool.query(`
+      SELECT COUNT(*) AS total_customers
+      FROM users
+      WHERE role = 'customer'
+    `)
+
+    res.json({
+      totalProducts: Number(productResult.rows[0].total_products),
+      totalOrders: Number(orderResult.rows[0].total_orders),
+      totalRevenue: Number(orderResult.rows[0].total_revenue),
+      totalCustomers: Number(customerResult.rows[0].total_customers)
+    })
+  } catch (error) {
+    console.error('Unable to load admin summary:', error.message)
+
+    res.status(500).json({
+      message: 'Unable to load admin dashboard summary.'
+    })
+  }
+})
+
+// Admin creates a new product
+app.post('/api/admin/products', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const title = String(req.body.title || '').trim()
+    const platform = String(req.body.platform || '').trim()
+    const genre = String(req.body.genre || '').trim()
+    const price = Number(req.body.price)
+    const stock = Number(req.body.stock)
+    const rating = Number(req.body.rating || 4.5)
+    const description = String(req.body.description || '').trim()
+    const imageEmoji = String(req.body.imageEmoji || '🎮').trim()
+    const featured = Boolean(req.body.featured)
+
+    const validPlatforms = ['PS4', 'PS5', 'Switch']
+
+    if (title.length < 2) {
+      return res.status(400).json({
+        message: 'Game title must contain at least 2 characters.'
+      })
+    }
+
+    if (!validPlatforms.includes(platform)) {
+      return res.status(400).json({
+        message: 'Please choose a valid platform.'
+      })
+    }
+
+    if (genre.length < 2 || description.length < 10) {
+      return res.status(400).json({
+        message: 'Please enter a genre and a complete description.'
+      })
+    }
+
+    if (!Number.isFinite(price) || price <= 0) {
+      return res.status(400).json({
+        message: 'Price must be greater than zero.'
+      })
+    }
+
+    if (!Number.isInteger(stock) || stock < 0) {
+      return res.status(400).json({
+        message: 'Stock must be a whole number of zero or more.'
+      })
+    }
+
+    if (!Number.isFinite(rating) || rating < 0 || rating > 5) {
+      return res.status(400).json({
+        message: 'Rating must be between 0 and 5.'
+      })
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO products (
+        title,
+        platform,
+        genre,
+        price,
+        stock,
+        rating,
+        description,
+        image_emoji,
+        featured
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+      `,
+      [
+        title,
+        platform,
+        genre,
+        price,
+        stock,
+        rating,
+        description,
+        imageEmoji || '🎮',
+        featured
+      ]
+    )
+
+    res.status(201).json({
+      message: 'Game added successfully.',
+      product: formatProduct(result.rows[0])
+    })
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({
+        message: 'A game with this title already exists.'
+      })
+    }
+
+    console.error('Unable to create product:', error.message)
+
+    res.status(500).json({
+      message: 'Unable to add game.'
+    })
+  }
+})
+// Admin updates an existing product
+app.put('/api/admin/products/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const productId = Number(req.params.id)
+    const title = String(req.body.title || '').trim()
+    const platform = String(req.body.platform || '').trim()
+    const genre = String(req.body.genre || '').trim()
+    const price = Number(req.body.price)
+    const stock = Number(req.body.stock)
+    const rating = Number(req.body.rating || 4.5)
+    const description = String(req.body.description || '').trim()
+    const imageEmoji = String(req.body.imageEmoji || '🎮').trim()
+    const featured = Boolean(req.body.featured)
+
+    const validPlatforms = ['PS4', 'PS5', 'Switch']
+
+    if (!Number.isInteger(productId) || productId < 1) {
+      return res.status(400).json({
+        message: 'Invalid product ID.'
+      })
+    }
+
+    if (
+      title.length < 2 ||
+      !validPlatforms.includes(platform) ||
+      genre.length < 2 ||
+      description.length < 10 ||
+      !Number.isFinite(price) ||
+      price <= 0 ||
+      !Number.isInteger(stock) ||
+      stock < 0 ||
+      !Number.isFinite(rating) ||
+      rating < 0 ||
+      rating > 5
+    ) {
+      return res.status(400).json({
+        message: 'Please complete all product fields correctly.'
+      })
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE products
+      SET
+        title = $1,
+        platform = $2,
+        genre = $3,
+        price = $4,
+        stock = $5,
+        rating = $6,
+        description = $7,
+        image_emoji = $8,
+        featured = $9
+      WHERE id = $10
+      RETURNING *
+      `,
+      [
+        title,
+        platform,
+        genre,
+        price,
+        stock,
+        rating,
+        description,
+        imageEmoji || '🎮',
+        featured,
+        productId
+      ]
+    )
+
+    if (!result.rows[0]) {
+      return res.status(404).json({
+        message: 'Game not found.'
+      })
+    }
+
+    res.json({
+      message: 'Game updated successfully.',
+      product: formatProduct(result.rows[0])
+    })
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({
+        message: 'A game with this title already exists.'
+      })
+    }
+
+    console.error('Unable to update product:', error.message)
+
+    res.status(500).json({
+      message: 'Unable to update game.'
+    })
+  }
+})
+// Admin deletes a product that has not been purchased
+app.delete('/api/admin/products/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const productId = Number(req.params.id)
+
+    if (!Number.isInteger(productId) || productId < 1) {
+      return res.status(400).json({
+        message: 'Invalid product ID.'
+      })
+    }
+
+    const orderCheck = await pool.query(
+      `
+      SELECT id
+      FROM order_items
+      WHERE product_id = $1
+      LIMIT 1
+      `,
+      [productId]
+    )
+
+    if (orderCheck.rows[0]) {
+      return res.status(409).json({
+        message: 'This game is part of an order history and cannot be deleted.'
+      })
+    }
+
+    const result = await pool.query(
+      `
+      DELETE FROM products
+      WHERE id = $1
+      RETURNING id, title
+      `,
+      [productId]
+    )
+
+    if (!result.rows[0]) {
+      return res.status(404).json({
+        message: 'Game not found.'
+      })
+    }
+
+    res.json({
+      message: `${result.rows[0].title} deleted successfully.`
+    })
+  } catch (error) {
+    console.error('Unable to delete product:', error.message)
+
+    res.status(500).json({
+      message: 'Unable to delete game.'
+    })
+  }
+})
+
+// Admin views all customer orders and purchased item details
+app.get('/api/admin/orders', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const orderResult = await pool.query(
+      `
+      SELECT
+        orders.id,
+        orders.total,
+        orders.status,
+        orders.address,
+        orders.payment_method,
+        orders.created_at,
+        users.id AS customer_id,
+        users.name AS customer_name,
+        users.email AS customer_email
+      FROM orders
+      JOIN users ON users.id = orders.user_id
+      ORDER BY orders.created_at DESC
+      `
+    )
+
+    const orders = []
+
+    for (const order of orderResult.rows) {
+      const itemResult = await pool.query(
+        `
+        SELECT
+          id,
+          product_id,
+          title,
+          platform,
+          price,
+          quantity
+        FROM order_items
+        WHERE order_id = $1
+        ORDER BY id ASC
+        `,
+        [order.id]
+      )
+
+      orders.push({
+        ...order,
+        total: Number(order.total),
+        items: itemResult.rows.map((item) => ({
+          ...item,
+          price: Number(item.price)
+        }))
+      })
+    }
+
+    res.json(orders)
+  } catch (error) {
+    console.error('Unable to load admin orders:', error.message)
+
+    res.status(500).json({
+      message: 'Unable to load customer orders.'
+    })
+  }
+})
+
+// Admin updates customer order delivery status
+app.patch('/api/admin/orders/:id/status', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const orderId = Number(req.params.id)
+    const status = String(req.body.status || '').trim()
+
+    const validStatuses = [
+      'Paid',
+      'Packing',
+      'Shipped',
+      'Delivered',
+      'Cancelled'
+    ]
+
+    if (!Number.isInteger(orderId) || orderId < 1) {
+      return res.status(400).json({
+        message: 'Invalid order ID.'
+      })
+    }
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        message: 'Please select a valid order status.'
+      })
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE orders
+      SET status = $1
+      WHERE id = $2
+      RETURNING *
+      `,
+      [status, orderId]
+    )
+
+    if (!result.rows[0]) {
+      return res.status(404).json({
+        message: 'Order not found.'
+      })
+    }
+
+    res.json({
+      message: `Order #${orderId} status updated to ${status}.`,
+      order: formatOrder(result.rows[0])
+    })
+  } catch (error) {
+    console.error('Unable to update order status:', error.message)
+
+    res.status(500).json({
+      message: 'Unable to update order status.'
     })
   }
 })

@@ -36,6 +36,25 @@ function formatDate(dateValue) {
     year: 'numeric'
   })
 }
+function statusBadgeClass(status) {
+  return {
+    Paid: 'bg-primary',
+    Packing: 'bg-warning text-dark',
+    Shipped: 'bg-info text-dark',
+    Delivered: 'bg-success',
+    Cancelled: 'bg-danger'
+  }[status] || 'bg-secondary'
+}
+
+function statusMessage(status) {
+  return {
+    Paid: 'Payment confirmed. Your order is awaiting processing.',
+    Packing: 'Your games are being packed for delivery.',
+    Shipped: 'Your order has been shipped and is on the way.',
+    Delivered: 'Your order has been delivered successfully.',
+    Cancelled: 'This order has been cancelled.'
+  }[status] || ''
+}
 
 onMounted(loadOrders)
 </script>
@@ -112,9 +131,18 @@ onMounted(loadOrders)
 
                 <div class="col-6 col-md">
                   <p class="small text-muted mb-1">Status</p>
-                  <span class="badge bg-success">
-                    {{ order.status }}
-                  </span>
+                  <div>
+                    <span
+                        class="badge mb-2"
+                        :class="statusBadgeClass(order.status)"
+                    >
+                        {{ order.status }}
+                    </span>
+
+                    <p class="small text-muted mb-0">
+                        {{ statusMessage(order.status) }}
+                    </p>
+                    </div>
                 </div>
 
                 <div class="col-12 col-md text-md-end">
