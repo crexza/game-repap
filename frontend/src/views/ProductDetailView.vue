@@ -54,12 +54,22 @@ onMounted(loadProduct)
 
       <div v-else class="card border-0 shadow-sm overflow-hidden">
         <div class="row g-0">
-          <div
-            class="col-12 col-lg-5 bg-white d-flex justify-content-center align-items-center"
-            style="min-height: 420px; font-size: 9rem"
-          >
-            {{ product.image_emoji }}
-          </div>
+          <div class="col-12 col-lg-5 bg-white p-4 d-flex justify-content-center align-items-center">
+            <img
+                v-if="product.image_url"
+                :src="product.image_url"
+                :alt="`${product.title} game cover`"
+                class="product-detail-cover"
+            />
+
+            <div
+                v-else
+                style="font-size: 9rem"
+                aria-hidden="true"
+            >
+                {{ product.image_emoji }}
+            </div>
+            </div>
 
           <div class="col-12 col-lg-7">
             <div class="card-body p-4 p-lg-5">

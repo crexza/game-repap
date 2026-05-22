@@ -175,6 +175,14 @@ export async function initialiseDatabase() {
     );
   `);
 
+    await pool.query(`
+    ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS image_url TEXT;
+
+    ALTER TABLE order_items
+    ADD COLUMN IF NOT EXISTS image_url TEXT;
+  `)
+
   for (const product of seedProducts) {
     await pool.query(
       `

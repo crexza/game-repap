@@ -47,14 +47,15 @@ export const useCartStore = defineStore('cart', () => {
     }
 
     items.value.push({
-      id: product.id,
-      title: product.title,
-      platform: product.platform,
-      price: Number(product.price),
-      stock: product.stock,
-      image_emoji: product.image_emoji,
-      quantity: 1
-    })
+        id: product.id,
+        title: product.title,
+        platform: product.platform,
+        price: Number(product.price),
+        stock: product.stock,
+        image_emoji: product.image_emoji,
+        image_url: product.image_url || '',
+        quantity: 1
+        })
   }
 
   function increaseQuantity(id) {

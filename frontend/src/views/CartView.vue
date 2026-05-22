@@ -41,12 +41,22 @@ const cartStore = useCartStore()
             <div class="card-body">
               <div class="row align-items-center g-3">
                 <div class="col-auto">
-                  <div
-                    class="rounded bg-light d-flex align-items-center justify-content-center"
-                    style="width: 88px; height: 88px; font-size: 2.6rem"
-                  >
-                    {{ item.image_emoji }}
-                  </div>
+                 <div class="cart-cover-frame rounded bg-light">
+                    <img
+                        v-if="item.image_url"
+                        :src="item.image_url"
+                        :alt="`${item.title} game cover`"
+                        class="cart-cover-image"
+                    />
+
+                    <span
+                        v-else
+                        class="fs-1"
+                        aria-hidden="true"
+                    >
+                        {{ item.image_emoji }}
+                    </span>
+                    </div>
                 </div>
 
                 <div class="col">

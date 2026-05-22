@@ -20,6 +20,10 @@ const submitting = ref(false)
 const error = ref('')
 const successMessage = ref('')
 const editingId = ref(null)
+const coverFile = ref(null)
+const coverPreview = ref('')
+const uploadingCover = ref(false)
+
 
 const emptyForm = () => ({
   title: '',
@@ -29,7 +33,8 @@ const emptyForm = () => ({
   stock: '',
   rating: 4.5,
   description: '',
-  imageEmoji: '🎮',
+  imageEmoji: '',
+  imageUrl: '',
   featured: false
 })
 
@@ -67,6 +72,8 @@ async function loadDashboard() {
 function resetForm() {
   Object.assign(form, emptyForm())
   editingId.value = null
+  coverFile.value = null
+  coverPreview.value = ''
   error.value = ''
 }
 
@@ -82,8 +89,12 @@ function editProduct(product) {
     rating: Number(product.rating),
     description: product.description,
     imageEmoji: product.image_emoji,
+    imageUrl: product.image_url || '',
     featured: product.featured
   })
+
+    coverFile.value = null
+  coverPreview.value = product.image_url || ''
 
   successMessage.value = ''
 
@@ -93,10 +104,73 @@ function editProduct(product) {
   })
 }
 
+function selectCover(event) {
+  const file = event.target.files?.[0]
+
+  if (!file) {
+    return
+  }
+
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp']
+
+  if (!allowedTypes.includes(file.type)) {
+    error.value = 'Please select a PNG, JPG or WebP image.'
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    error.value = 'Cover image must be smaller than 5 MB.'
+    return
+  }
+
+  coverFile.value = file
+  coverPreview.value = URL.createObjectURL(file)
+  error.value = ''
+}
+
+async function uploadCoverIfSelected() {
+  if (!coverFile.value) {
+    return form.imageUrl
+  }
+
+  uploadingCover.value = true
+
+  try {
+    const uploadData = new FormData()
+    uploadData.append('cover', coverFile.value)
+
+    const response = await api.post(
+  '/admin/uploads/game-cover',
+  uploadData,
+  {
+    headers: {
+      Authorization: `Bearer ${authStore.token}`
+    }
+  }
+)
+
+    return response.data.imageUrl
+  } finally {
+    uploadingCover.value = false
+  }
+}
+
 async function submitProduct() {
   submitting.value = true
   error.value = ''
   successMessage.value = ''
+
+    let uploadedImageUrl = form.imageUrl
+
+  try {
+    uploadedImageUrl = await uploadCoverIfSelected()
+  } catch (requestError) {
+    error.value =
+      requestError.response?.data?.message ||
+      'Unable to upload cover image.'
+    submitting.value = false
+    return
+  }
 
   const productData = {
     title: form.title,
@@ -107,6 +181,7 @@ async function submitProduct() {
     rating: Number(form.rating),
     description: form.description,
     imageEmoji: form.imageEmoji,
+    imageUrl: uploadedImageUrl,
     featured: form.featured
   }
 
@@ -394,20 +469,7 @@ onMounted(loadDashboard)
                       />
                     </div>
 
-                    <div class="col-6">
-                      <label for="admin-emoji" class="form-label fw-semibold">
-                        Icon
-                      </label>
-
-                      <input
-                        id="admin-emoji"
-                        v-model.trim="form.imageEmoji"
-                        type="text"
-                        class="form-control"
-                        maxlength="8"
-                        required
-                      />
-                    </div>
+                   
                   </div>
 
                   <div class="mb-3">
@@ -424,6 +486,30 @@ onMounted(loadDashboard)
                       required
                     ></textarea>
                   </div>
+                  <div class="mb-3">
+                    <label for="admin-cover" class="form-label fw-semibold">
+                        Game Cover Image
+                    </label>
+
+                    <input
+                        id="admin-cover"
+                        type="file"
+                        class="form-control"
+                        accept="image/png,image/jpeg,image/webp"
+                        @change="selectCover"
+                    />
+
+                    <p class="form-text">
+                        PNG, JPG or WebP. Maximum size 5 MB.
+                    </p>
+
+                    <img
+                        v-if="coverPreview"
+                        :src="coverPreview"
+                        alt="Selected game cover preview"
+                        class="admin-cover-preview mt-3"
+                    />
+                    </div>
 
                   <div class="form-check mb-4">
                     <input
@@ -444,12 +530,14 @@ onMounted(loadDashboard)
                     :disabled="submitting"
                   >
                     {{
-                      submitting
-                        ? 'Saving...'
-                        : editingId
-                          ? 'Update Game'
-                          : 'Add Game'
-                    }}
+                        uploadingCover
+                            ? 'Uploading Cover...'
+                            : submitting
+                            ? 'Saving...'
+                            : editingId
+                                ? 'Update Game'
+                                : 'Add Game'
+                        }}
                   </button>
 
                   <button
@@ -501,9 +589,18 @@ onMounted(loadDashboard)
                       >
                         <td>
                           <div class="d-flex align-items-center gap-3">
-                            <span class="fs-3">
-                              {{ product.image_emoji }}
+                           <div class="admin-table-cover rounded bg-light">
+                            <img
+                                v-if="product.image_url"
+                                :src="product.image_url"
+                                :alt="`${product.title} game cover`"
+                                class="admin-table-cover-image"
+                            />
+
+                            <span v-else class="fs-3" aria-hidden="true">
+                                {{ product.image_emoji }}
                             </span>
+                            </div>
 
                             <div>
                               <p class="fw-semibold mb-0">

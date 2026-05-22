@@ -160,14 +160,30 @@ onMounted(loadOrders)
                 :key="item.id"
                 class="d-flex justify-content-between align-items-center border-bottom py-3"
               >
-                <div>
-                  <p class="fw-semibold mb-1">
-                    {{ item.title }}
-                  </p>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="order-cover-frame rounded bg-light">
+                        <img
+                        v-if="item.image_url"
+                        :src="item.image_url"
+                        :alt="`${item.title} game cover`"
+                        class="order-cover-image"
+                        />
+
+                        <span v-else aria-hidden="true">
+                        🎮
+                        </span>
+                    </div>
+
+                    <div>
+                        <p class="fw-semibold mb-1">
+                        {{ item.title }}
+                        </p>
                   <p class="small text-muted mb-0">
                     {{ item.platform }} · Quantity: {{ item.quantity }}
                   </p>
-                </div>
+                    </div>
+                    </div>
+                
 
                 <p class="fw-semibold mb-0">
                   RM {{ (Number(item.price) * item.quantity).toFixed(2) }}

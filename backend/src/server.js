@@ -2,10 +2,30 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import bcrypt from 'bcryptjs'
+import multer from 'multer'
+import crypto from 'node:crypto'
+import { supabaseStorage, GAME_COVER_BUCKET } from './storage.js'
 import { pool, initialiseDatabase } from './db.js'
 import { createToken, requireAuth, requireAdmin } from './auth.js'
 const app = express()
 const port = Number(process.env.PORT) || 3000
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  },
+  fileFilter(_req, file, callback) {
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp']
+
+    if (!allowedTypes.includes(file.mimetype)) {
+      return callback(
+        new Error('Only PNG, JPG and WebP cover images are allowed.')
+      )
+    }
+
+    callback(null, true)
+  }
+})
 
 const allowedOrigins = (
   process.env.FRONTEND_URL || 'http://localhost:5173'
@@ -381,22 +401,24 @@ app.post('/api/orders', requireAuth, async (req, res) => {
       await client.query(
         `
         INSERT INTO order_items (
-          order_id,
-          product_id,
-          title,
-          platform,
-          price,
-          quantity
-        )
-        VALUES ($1, $2, $3, $4, $5, $6)
+            order_id,
+            product_id,
+            title,
+            platform,
+            price,
+            quantity,
+            image_url
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
         `,
-        [
-          order.id,
-          item.product.id,
-          item.product.title,
-          item.product.platform,
-          item.product.price,
-          item.quantity
+       [
+        order.id,
+        item.product.id,
+        item.product.title,
+        item.product.platform,
+        item.product.price,
+        item.quantity,
+        item.product.image_url || null
         ]
       )
 
@@ -423,7 +445,8 @@ app.post('/api/orders', requireAuth, async (req, res) => {
           title: item.product.title,
           platform: item.product.platform,
           price: Number(item.product.price),
-          quantity: item.quantity
+          quantity: item.quantity,
+          image_url: item.product.image_url || null
         }))
       }
     })
@@ -542,6 +565,7 @@ app.post('/api/admin/products', requireAuth, requireAdmin, async (req, res) => {
     const rating = Number(req.body.rating || 4.5)
     const description = String(req.body.description || '').trim()
     const imageEmoji = String(req.body.imageEmoji || '🎮').trim()
+    const imageUrl = String(req.body.imageUrl || '').trim()
     const featured = Boolean(req.body.featured)
 
     const validPlatforms = ['PS4', 'PS5', 'Switch']
@@ -593,10 +617,11 @@ app.post('/api/admin/products', requireAuth, requireAdmin, async (req, res) => {
         rating,
         description,
         image_emoji,
+        image_url,
         featured
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING *
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *
       `,
       [
         title,
@@ -607,8 +632,9 @@ app.post('/api/admin/products', requireAuth, requireAdmin, async (req, res) => {
         rating,
         description,
         imageEmoji || '🎮',
+        imageUrl || null,
         featured
-      ]
+        ]
     )
 
     res.status(201).json({
@@ -641,6 +667,7 @@ app.put('/api/admin/products/:id', requireAuth, requireAdmin, async (req, res) =
     const rating = Number(req.body.rating || 4.5)
     const description = String(req.body.description || '').trim()
     const imageEmoji = String(req.body.imageEmoji || '🎮').trim()
+    const imageUrl = String(req.body.imageUrl || '').trim()
     const featured = Boolean(req.body.featured)
 
     const validPlatforms = ['PS4', 'PS5', 'Switch']
@@ -672,7 +699,7 @@ app.put('/api/admin/products/:id', requireAuth, requireAdmin, async (req, res) =
     const result = await pool.query(
       `
       UPDATE products
-      SET
+        SET
         title = $1,
         platform = $2,
         genre = $3,
@@ -681,9 +708,10 @@ app.put('/api/admin/products/:id', requireAuth, requireAdmin, async (req, res) =
         rating = $6,
         description = $7,
         image_emoji = $8,
-        featured = $9
-      WHERE id = $10
-      RETURNING *
+        image_url = $9,
+        featured = $10
+        WHERE id = $11
+        RETURNING *
       `,
       [
         title,
@@ -694,9 +722,10 @@ app.put('/api/admin/products/:id', requireAuth, requireAdmin, async (req, res) =
         rating,
         description,
         imageEmoji || '🎮',
+        imageUrl || null,
         featured,
         productId
-      ]
+        ]
     )
 
     if (!result.rows[0]) {
@@ -891,6 +920,70 @@ app.patch('/api/admin/orders/:id/status', requireAuth, requireAdmin, async (req,
     })
   }
 })
+
+// Admin uploads a game cover image to Supabase Storage
+app.post(
+  '/api/admin/uploads/game-cover',
+  requireAuth,
+  requireAdmin,
+  (req, res, next) => {
+    upload.single('cover')(req, res, (error) => {
+      if (error) {
+        return res.status(400).json({
+          message: error.message || 'Invalid image upload.'
+        })
+      }
+
+      next()
+    })
+  },
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          message: 'Please select a game cover image.'
+        })
+      }
+
+      const extensionMap = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/webp': 'webp'
+      }
+
+      const extension = extensionMap[req.file.mimetype]
+      const fileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`
+      const filePath = `products/${fileName}`
+
+      const { error: uploadError } = await supabaseStorage.storage
+        .from(GAME_COVER_BUCKET)
+        .upload(filePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      const { data } = supabaseStorage.storage
+        .from(GAME_COVER_BUCKET)
+        .getPublicUrl(filePath)
+
+      res.status(201).json({
+        message: 'Cover image uploaded successfully.',
+        imageUrl: data.publicUrl
+      })
+    } catch (error) {
+      console.error('Unable to upload game cover:', error.message)
+
+      res.status(500).json({
+        message: 'Unable to upload game cover image.'
+      })
+    }
+  }
+)
 
 // Handle unknown API routes
 app.use('/api', (_req, res) => {

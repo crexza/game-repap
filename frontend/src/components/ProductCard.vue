@@ -36,12 +36,22 @@ function addProduct() {
       class="text-decoration-none text-dark"
       :aria-label="`View details for ${product.title}`"
     >
-      <div
-        class="bg-white text-center py-5 rounded-top"
-        style="font-size: 4rem"
-      >
-        {{ product.image_emoji }}
-      </div>
+      <div class="product-cover-frame rounded-top">
+  <img
+    v-if="product.image_url"
+    :src="product.image_url"
+    :alt="`${product.title} game cover`"
+    class="product-cover-image"
+  />
+
+  <div
+    v-else
+    class="product-cover-fallback"
+    aria-hidden="true"
+  >
+    {{ product.image_emoji }}
+  </div>
+</div>
     </RouterLink>
 
     <div class="card-body d-flex flex-column">

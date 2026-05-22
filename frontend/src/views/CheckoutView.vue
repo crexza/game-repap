@@ -294,12 +294,21 @@ async function submitOrder() {
                   :key="item.id"
                   class="d-flex gap-3 align-items-center mb-3"
                 >
-                  <div
-                    class="rounded bg-light d-flex align-items-center justify-content-center"
-                    style="width: 58px; height: 58px; font-size: 1.8rem"
-                  >
-                    {{ item.image_emoji }}
-                  </div>
+                  <div class="checkout-cover-frame rounded bg-light">
+                    <img
+                        v-if="item.image_url"
+                        :src="item.image_url"
+                        :alt="`${item.title} game cover`"
+                        class="checkout-cover-image"
+                    />
+
+                    <span
+                        v-else
+                        aria-hidden="true"
+                    >
+                        {{ item.image_emoji }}
+                    </span>
+                    </div>
 
                   <div class="flex-grow-1">
                     <p class="fw-semibold mb-0">
