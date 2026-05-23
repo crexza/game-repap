@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useCartStore } from './stores/cart'
 import { useAuthStore } from './stores/auth'
 import AppToast from './components/AppToast.vue'
+import AppFooter from './components/AppFooter.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -164,8 +165,10 @@ function logout() {
   </section>
 
   <main id="main-content">
-    <RouterView />
-  </main>
+  <RouterView />
+</main>
 
-  <AppToast />
+<AppFooter />
+
+<AppToast />
 </template>

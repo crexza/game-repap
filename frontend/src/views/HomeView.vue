@@ -35,8 +35,8 @@ onMounted(async () => {
           </h1>
 
           <p class="lead text-white-50 mt-3">
-            Buy original PS4, PS5 and Nintendo Switch games with fast delivery
-            across Malaysia.
+            Gaming craving? Gameripap delivers.
+Original PS4, PS5 and Nintendo Switch games for Malaysian gamers.
           </p>
 
           <div class="d-flex gap-3 mt-4 flex-wrap">
@@ -63,7 +63,7 @@ onMounted(async () => {
             </h2>
 
             <p class="mb-0">
-              PS4 • PS5 • Nintendo Switch
+              • PS4  • PS5  • Nintendo Switch
             </p>
           </div>
         </div>
