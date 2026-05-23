@@ -3,8 +3,10 @@ import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
+import { useToastStore } from '../stores/toast'
 
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 
 const orders = ref([])
 const loading = ref(true)
@@ -65,8 +67,10 @@ async function updateStatus(order) {
     )
 
     order.status = response.data.order.status
+    toastStore.show(`Order #${order.id} updated to ${order.status}.`)
   } catch (requestError) {
     error.value =
+    toastStore.show(error.value, 'error')
       requestError.response?.data?.message ||
       'Unable to update order status.'
   }

@@ -1034,3 +1034,304 @@ body {
     height: 320px;
   }
 }
+
+/* Final Gameripap UI polish */
+
+.gameripap-navbar {
+  background-color: #052e22;
+  box-shadow: 0 3px 16px rgba(5, 46, 34, 0.2);
+}
+
+.navbar-logo {
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.skip-z-index {
+  z-index: 1100;
+}
+
+.account-menu-button {
+  min-width: 148px;
+  color: #052e22;
+  font-weight: 600;
+}
+
+.admin-menu-item {
+  color: #9d2a2a;
+  font-weight: 600;
+}
+
+.simple-page-header {
+  padding: 3.5rem 0;
+  background: linear-gradient(135deg, #052e22 0%, #0f6b44 100%);
+  color: #ffffff;
+}
+
+.simple-page-header .page-label {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  color: #b9f2d4;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.simple-page-header h1 {
+  margin-bottom: 0.65rem;
+  font-size: clamp(2.1rem, 4vw, 3rem);
+  font-weight: 750;
+  letter-spacing: -0.04em;
+}
+
+.simple-page-header p {
+  max-width: 580px;
+  margin-bottom: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 1.05rem;
+}
+
+.page-brand-banner {
+  height: clamp(100px, 15vw, 210px);
+}
+
+.product-card {
+  overflow: hidden;
+  border-radius: 18px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 38px rgba(5, 46, 34, 0.13) !important;
+}
+
+.product-cover-frame {
+  display: flex;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f4f7f5;
+}
+
+.product-cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  padding: 0;
+}
+
+.product-cover-placeholder {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #70847d;
+  font-size: 0.9rem;
+  background: #e8f0ec;
+}
+
+.product-title {
+  min-height: 42px;
+  line-height: 1.4;
+}
+
+.product-detail-card {
+  border-radius: 20px;
+}
+
+.product-detail-cover {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: 0 12px 34px rgba(5, 46, 34, 0.11);
+}
+
+.cover-not-available {
+  display: flex;
+  width: min(360px, 100%);
+  aspect-ratio: 2 / 3;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #e8f0ec;
+  color: #70847d;
+}
+
+.product-description {
+  max-width: 570px;
+  color: #475c54;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.quantity-button {
+  width: 46px;
+  height: 46px;
+  font-size: 1.25rem;
+}
+
+.quantity-number {
+  width: 32px;
+  text-align: center;
+}
+
+.trust-card {
+  display: flex;
+  min-height: 58px;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-radius: 10px;
+  background: #edf7f2;
+  color: #0f6b44;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.gameripap-toast {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 1200;
+  display: flex;
+  width: min(390px, calc(100vw - 32px));
+  gap: 12px;
+  align-items: center;
+  padding: 15px 16px;
+  border-radius: 14px;
+  background: #052e22;
+  color: white;
+  box-shadow: 0 18px 44px rgba(5, 46, 34, 0.27);
+}
+
+.toast-error {
+  background: #a83232;
+}
+
+.toast-icon {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  font-weight: 700;
+}
+
+.toast-close {
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 1.4rem;
+}
+
+.toast-slide-enter-active,
+.toast-slide-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.toast-slide-enter-from,
+.toast-slide-leave-to {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.order-progress {
+  display: flex;
+  margin: 1rem 0 0;
+}
+
+.progress-step {
+  position: relative;
+  flex: 1;
+  text-align: center;
+}
+
+.progress-step:not(:last-child)::after {
+  position: absolute;
+  top: 15px;
+  left: calc(50% + 18px);
+  width: calc(100% - 36px);
+  height: 3px;
+  background: #d7e3dd;
+  content: '';
+}
+
+.progress-step.completed:not(:last-child)::after {
+  background: #0f6b44;
+}
+
+.step-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 9px;
+  place-items: center;
+  border: 3px solid #d7e3dd;
+  border-radius: 50%;
+  background: white;
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.progress-step.completed .step-dot {
+  border-color: #0f6b44;
+  background: #0f6b44;
+}
+
+.progress-step.active .step-dot {
+  border-color: #0f6b44;
+  background: #ffffff;
+  box-shadow: 0 0 0 5px rgba(15, 107, 68, 0.14);
+}
+
+.progress-step.cancelled .step-dot {
+  border-color: #b93c3c;
+}
+
+.step-label {
+  color: #71857d;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.progress-step.completed .step-label,
+.progress-step.active .step-label {
+  color: #052e22;
+}
+
+@media (max-width: 767.98px) {
+  .page-brand-banner {
+    height: 96px;
+  }
+
+  .order-progress {
+    gap: 0;
+  }
+
+  .step-label {
+    font-size: 0.72rem;
+  }
+
+  .gameripap-toast {
+    right: 16px;
+    bottom: 16px;
+  }
+}

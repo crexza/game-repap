@@ -1,36 +1,52 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import api from '../services/api'
 import { useCartStore } from '../stores/cart'
+import { useToastStore } from '../stores/toast'
 
 const route = useRoute()
 const cartStore = useCartStore()
+const toastStore = useToastStore()
 
 const product = ref(null)
+const quantity = ref(1)
 const loading = ref(true)
 const error = ref('')
-const addedMessage = ref(false)
+
+const platformClass = computed(() => {
+  if (product.value?.platform === 'PS5') return 'bg-primary'
+  if (product.value?.platform === 'PS4') return 'bg-dark'
+  return 'bg-danger'
+})
 
 async function loadProduct() {
   try {
     const response = await api.get(`/products/${route.params.id}`)
     product.value = response.data
-  } catch (err) {
+  } catch (requestError) {
     error.value = 'Game not found or backend is unavailable.'
-    console.error(err)
+    console.error(requestError)
   } finally {
     loading.value = false
   }
 }
 
-function addProduct() {
-  cartStore.addToCart(product.value)
-  addedMessage.value = true
+function increaseQuantity() {
+  if (quantity.value < product.value.stock) {
+    quantity.value += 1
+  }
+}
 
-  window.setTimeout(() => {
-    addedMessage.value = false
-  }, 1500)
+function decreaseQuantity() {
+  if (quantity.value > 1) {
+    quantity.value -= 1
+  }
+}
+
+function addProduct() {
+  cartStore.addToCart(product.value, quantity.value)
+  toastStore.show(`${quantity.value} × ${product.value.title} added to cart.`)
 }
 
 onMounted(loadProduct)
@@ -52,35 +68,24 @@ onMounted(loadProduct)
         {{ error }}
       </div>
 
-      <div v-else class="card border-0 shadow-sm overflow-hidden">
+      <div v-else class="card product-detail-card border-0 shadow-sm overflow-hidden">
         <div class="row g-0">
-          <div class="col-12 col-lg-5 bg-white p-4 d-flex justify-content-center align-items-center">
+          <div class="col-12 col-lg-5 bg-white p-4 p-lg-5 d-flex justify-content-center align-items-center">
             <img
-                v-if="product.image_url"
-                :src="product.image_url"
-                :alt="`${product.title} game cover`"
-                class="product-detail-cover"
+              v-if="product.image_url"
+              :src="product.image_url"
+              :alt="`${product.title} game cover`"
+              class="product-detail-cover"
             />
 
-            <div
-                v-else
-                style="font-size: 9rem"
-                aria-hidden="true"
-            >
-                {{ product.image_emoji }}
+            <div v-else class="cover-not-available">
+              No cover uploaded
             </div>
-            </div>
+          </div>
 
           <div class="col-12 col-lg-7">
             <div class="card-body p-4 p-lg-5">
-              <span
-                class="badge mb-3"
-                :class="{
-                  'bg-primary': product.platform === 'PS5',
-                  'bg-dark': product.platform === 'PS4',
-                  'bg-danger': product.platform === 'Switch'
-                }"
-              >
+              <span class="badge mb-3" :class="platformClass">
                 {{ product.platform }}
               </span>
 
@@ -96,7 +101,7 @@ onMounted(loadProduct)
                 Genre: {{ product.genre }}
               </p>
 
-              <p class="lead">
+              <p class="lead product-description">
                 {{ product.description }}
               </p>
 
@@ -111,6 +116,38 @@ onMounted(loadProduct)
                 RM {{ Number(product.price).toFixed(2) }}
               </p>
 
+              <div class="mt-4">
+                <label class="form-label fw-semibold">
+                  Quantity
+                </label>
+
+                <div class="d-flex align-items-center gap-3">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary quantity-button"
+                    aria-label="Decrease quantity"
+                    :disabled="quantity <= 1"
+                    @click="decreaseQuantity"
+                  >
+                    −
+                  </button>
+
+                  <span class="fs-5 fw-bold quantity-number">
+                    {{ quantity }}
+                  </span>
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary quantity-button"
+                    aria-label="Increase quantity"
+                    :disabled="quantity >= product.stock"
+                    @click="increaseQuantity"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
               <div class="d-flex flex-column flex-sm-row gap-3 mt-4">
                 <button
                   type="button"
@@ -118,12 +155,35 @@ onMounted(loadProduct)
                   :disabled="product.stock === 0"
                   @click="addProduct"
                 >
-                  {{ addedMessage ? 'Added to Cart ✓' : 'Add to Cart' }}
+                  Add to Cart
                 </button>
 
                 <RouterLink to="/cart" class="btn btn-outline-dark btn-lg">
                   Go to Cart
                 </RouterLink>
+              </div>
+
+              <div class="row g-3 mt-4">
+                <div class="col-12 col-sm-4">
+                  <div class="trust-card">
+                    <span aria-hidden="true">✓</span>
+                    Original Game
+                  </div>
+                </div>
+
+                <div class="col-12 col-sm-4">
+                  <div class="trust-card">
+                    <span aria-hidden="true">🚚</span>
+                    Malaysia Delivery
+                  </div>
+                </div>
+
+                <div class="col-12 col-sm-4">
+                  <div class="trust-card">
+                    <span aria-hidden="true">🔒</span>
+                    Secure Checkout
+                  </div>
+                </div>
               </div>
             </div>
           </div>

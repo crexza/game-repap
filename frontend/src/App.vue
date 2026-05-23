@@ -1,11 +1,18 @@
 <script setup>
-import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useCartStore } from './stores/cart'
 import { useAuthStore } from './stores/auth'
+import AppToast from './components/AppToast.vue'
 
+const route = useRoute()
 const router = useRouter()
 const cartStore = useCartStore()
 const authStore = useAuthStore()
+
+const showBrandBanner = computed(() => {
+  return ['home', 'shop', 'product-detail'].includes(route.name)
+})
 
 function logout() {
   authStore.logout()
@@ -16,20 +23,23 @@ function logout() {
 <template>
   <a
     href="#main-content"
-    class="visually-hidden-focusable btn btn-primary position-absolute m-2"
+    class="visually-hidden-focusable btn btn-primary position-absolute m-2 skip-z-index"
   >
     Skip to main content
   </a>
 
-  <nav class="navbar navbar-expand-lg navbar-dark bg-black shadow-sm sticky-top">
+  <nav class="navbar navbar-expand-lg navbar-dark gameripap-navbar sticky-top">
     <div class="container">
-      <RouterLink class="navbar-brand d-flex align-items-center gap-2 fw-bold" to="/">
+      <RouterLink
+        class="navbar-brand d-flex align-items-center gap-2 fw-bold"
+        to="/"
+      >
         <img
           src="/images/branding/gameripap-logo.png"
           alt="Gameripap logo"
           width="46"
           height="46"
-          class="rounded"
+          class="navbar-logo"
         />
 
         <span>Gameripap</span>
@@ -57,50 +67,69 @@ function logout() {
             Shop
           </RouterLink>
 
-          <RouterLink class="btn btn-outline-light ms-lg-3 mt-2 mt-lg-0" to="/cart">
+          <RouterLink
+            class="btn btn-outline-light ms-lg-3 mt-2 mt-lg-0"
+            to="/cart"
+          >
             🛒 Cart
-            <span class="badge bg-primary ms-1">
+            <span class="badge rounded-pill bg-warning text-dark ms-1">
               {{ cartStore.itemCount }}
             </span>
           </RouterLink>
 
           <template v-if="authStore.isLoggedIn">
+            <div class="dropdown ms-lg-2 mt-2 mt-lg-0">
+              <button
+                class="btn btn-light dropdown-toggle account-menu-button"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                👤 {{ authStore.user?.name }}
+              </button>
 
-            <RouterLink
-              v-if="authStore.isAdmin"
-              class="btn btn-danger ms-lg-2 mt-2 mt-lg-0"
-              to="/admin"
-            >
-              ⚙️ Admin
-            </RouterLink>
-            <RouterLink
-              v-if="authStore.isAdmin"
-              class="btn btn-outline-warning ms-lg-2 mt-2 mt-lg-0"
-              to="/admin/orders"
-            >
-              📦 Customer Orders
-            </RouterLink>
+              <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                <li>
+                  <RouterLink class="dropdown-item" to="/account">
+                    My Account
+                  </RouterLink>
+                </li>
 
-            <RouterLink
-              class="btn btn-outline-light ms-lg-2 mt-2 mt-lg-0"
-              to="/orders"
-            >
-              📦 Orders
-            </RouterLink>
-            <RouterLink
-              class="btn btn-primary ms-lg-2 mt-2 mt-lg-0"
-              to="/account"
-            >
-              👤 {{ authStore.user.name }}
-            </RouterLink>
+                <li>
+                  <RouterLink class="dropdown-item" to="/orders">
+                    My Orders
+                  </RouterLink>
+                </li>
 
-            <button
-              type="button"
-              class="btn btn-outline-danger ms-lg-2 mt-2 mt-lg-0"
-              @click="logout"
-            >
-              Logout
-            </button>
+                <template v-if="authStore.isAdmin">
+                  <li><hr class="dropdown-divider" /></li>
+
+                  <li>
+                    <RouterLink class="dropdown-item admin-menu-item" to="/admin">
+                      ⚙️ Admin Dashboard
+                    </RouterLink>
+                  </li>
+
+                  <li>
+                    <RouterLink class="dropdown-item admin-menu-item" to="/admin/orders">
+                      📦 Customer Orders
+                    </RouterLink>
+                  </li>
+                </template>
+
+                <li><hr class="dropdown-divider" /></li>
+
+                <li>
+                  <button
+                    type="button"
+                    class="dropdown-item text-danger"
+                    @click="logout"
+                  >
+                    Log Out
+                  </button>
+                </li>
+              </ul>
+            </div>
           </template>
 
           <template v-else>
@@ -112,7 +141,7 @@ function logout() {
             </RouterLink>
 
             <RouterLink
-              class="btn btn-primary ms-lg-2 mt-2 mt-lg-0"
+              class="btn btn-warning ms-lg-2 mt-2 mt-lg-0 fw-semibold"
               to="/register"
             >
               Register
@@ -123,14 +152,20 @@ function logout() {
     </div>
   </nav>
 
-  <section class="page-brand-banner" aria-label="Gameripap promotional banner">
-  <img
-    src="/images/branding/gameripap-page-banner.png"
-    alt="Gameripap gaming store banner"
-  />
-</section>
+  <section
+    v-if="showBrandBanner"
+    class="page-brand-banner"
+    aria-label="Gameripap promotional banner"
+  >
+    <img
+      src="/images/branding/gameripap-page-banner.png"
+      alt=""
+    />
+  </section>
 
   <main id="main-content">
     <RouterView />
   </main>
+
+  <AppToast />
 </template>

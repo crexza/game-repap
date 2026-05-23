@@ -32,30 +32,37 @@ export const useCartStore = defineStore('cart', () => {
 
   const total = computed(() => subtotal.value + deliveryFee.value)
 
-  function addToCart(product) {
-    if (product.stock === 0) {
-      return
+  function addToCart(product, selectedQuantity = 1) {
+    if (!product || product.stock === 0) {
+      return false
     }
+
+    const quantityToAdd = Number(selectedQuantity)
+    const safeQuantity =
+      Number.isInteger(quantityToAdd) && quantityToAdd > 0
+        ? quantityToAdd
+        : 1
 
     const existingItem = items.value.find((item) => item.id === product.id)
 
     if (existingItem) {
-      if (existingItem.quantity < product.stock) {
-        existingItem.quantity += 1
-      }
-      return
+      const newQuantity = existingItem.quantity + safeQuantity
+      existingItem.quantity = Math.min(newQuantity, product.stock)
+      return true
     }
 
     items.value.push({
-        id: product.id,
-        title: product.title,
-        platform: product.platform,
-        price: Number(product.price),
-        stock: product.stock,
-        image_emoji: product.image_emoji,
-        image_url: product.image_url || '',
-        quantity: 1
-        })
+      id: product.id,
+      title: product.title,
+      platform: product.platform,
+      price: Number(product.price),
+      stock: product.stock,
+      image_emoji: product.image_emoji,
+      image_url: product.image_url || '',
+      quantity: Math.min(safeQuantity, product.stock)
+    })
+
+    return true
   }
 
   function increaseQuantity(id) {

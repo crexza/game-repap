@@ -11,6 +11,8 @@ const orders = ref([])
 const loading = ref(true)
 const error = ref('')
 
+const progressSteps = ['Paid', 'Packing', 'Shipped', 'Delivered']
+
 async function loadOrders() {
   try {
     const response = await api.get('/orders', {
@@ -36,6 +38,7 @@ function formatDate(dateValue) {
     year: 'numeric'
   })
 }
+
 function statusBadgeClass(status) {
   return {
     Paid: 'bg-primary',
@@ -53,20 +56,37 @@ function statusMessage(status) {
     Shipped: 'Your order has been shipped and is on the way.',
     Delivered: 'Your order has been delivered successfully.',
     Cancelled: 'This order has been cancelled.'
-  }[status] || ''
+  }[status] || 'Order status is being updated.'
+}
+
+function stepClass(orderStatus, step) {
+  if (orderStatus === 'Cancelled') {
+    return 'cancelled'
+  }
+
+  const currentIndex = progressSteps.indexOf(orderStatus)
+  const stepIndex = progressSteps.indexOf(step)
+
+  if (stepIndex < currentIndex) {
+    return 'completed'
+  }
+
+  if (stepIndex === currentIndex) {
+    return 'active'
+  }
+
+  return 'pending'
 }
 
 onMounted(loadOrders)
 </script>
 
 <template>
-  <section class="bg-dark text-white py-5">
+  <section class="simple-page-header">
     <div class="container">
-      <span class="badge bg-primary mb-3">My Purchases</span>
-      <h1 class="display-5 fw-bold">Order History</h1>
-      <p class="lead text-white-50 mb-0">
-        Review your completed GameVault transactions.
-      </p>
+      <span class="page-label">My Purchases</span>
+      <h1>Order History</h1>
+      <p>Track your completed Gameripap purchases and delivery progress.</p>
     </div>
   </section>
 
@@ -97,9 +117,7 @@ onMounted(loadOrders)
         <div class="card-body py-5">
           <div class="display-3 mb-3">📦</div>
           <h2 class="h3 fw-bold">No orders yet</h2>
-          <p class="text-muted">
-            Your completed purchases will appear here.
-          </p>
+          <p class="text-muted">Your completed purchases will appear here.</p>
           <RouterLink to="/shop" class="btn btn-primary mt-3">
             Browse Games
           </RouterLink>
@@ -107,45 +125,29 @@ onMounted(loadOrders)
       </div>
 
       <div v-else class="row g-4">
-        <div
-          v-for="order in orders"
-          :key="order.id"
-          class="col-12"
-        >
-          <article class="card border-0 shadow-sm">
+        <div v-for="order in orders" :key="order.id" class="col-12">
+          <article class="card border-0 shadow-sm overflow-hidden order-card">
             <div class="card-header bg-white p-4">
-              <div class="row align-items-center g-3">
-                <div class="col-12 col-md">
+              <div class="row align-items-start g-3">
+                <div class="col-12 col-md-2">
                   <p class="small text-muted mb-1">Order Reference</p>
-                  <h2 class="h5 fw-bold mb-0">
-                    #{{ order.id }}
-                  </h2>
+                  <h2 class="h5 fw-bold mb-0">#{{ order.id }}</h2>
                 </div>
 
-                <div class="col-6 col-md">
+                <div class="col-6 col-md-3">
                   <p class="small text-muted mb-1">Order Date</p>
-                  <p class="fw-semibold mb-0">
-                    {{ formatDate(order.created_at) }}
-                  </p>
+                  <p class="fw-semibold mb-0">{{ formatDate(order.created_at) }}</p>
                 </div>
 
-                <div class="col-6 col-md">
-                  <p class="small text-muted mb-1">Status</p>
-                  <div>
-                    <span
-                        class="badge mb-2"
-                        :class="statusBadgeClass(order.status)"
-                    >
-                        {{ order.status }}
-                    </span>
-
-                    <p class="small text-muted mb-0">
-                        {{ statusMessage(order.status) }}
-                    </p>
-                    </div>
+                <div class="col-12 col-md-5">
+                  <p class="small text-muted mb-1">Delivery Status</p>
+                  <span class="badge mb-2" :class="statusBadgeClass(order.status)">
+                    {{ order.status }}
+                  </span>
+                  <p class="small text-muted mb-0">{{ statusMessage(order.status) }}</p>
                 </div>
 
-                <div class="col-12 col-md text-md-end">
+                <div class="col-6 col-md-2 text-md-end">
                   <p class="small text-muted mb-1">Total</p>
                   <p class="fw-bold text-primary fs-5 mb-0">
                     RM {{ Number(order.total).toFixed(2) }}
@@ -155,55 +157,70 @@ onMounted(loadOrders)
             </div>
 
             <div class="card-body p-4">
+              <div class="order-progress" aria-label="Delivery progress">
+                <div
+                  v-for="step in progressSteps"
+                  :key="step"
+                  class="progress-step"
+                  :class="stepClass(order.status, step)"
+                >
+                  <div class="step-dot">
+                    <span v-if="stepClass(order.status, step) === 'completed'">✓</span>
+                  </div>
+                  <span class="step-label">{{ step }}</span>
+                </div>
+              </div>
+
+              <div
+                v-if="order.status === 'Cancelled'"
+                class="alert alert-danger mt-4 mb-0"
+              >
+                This order has been cancelled.
+              </div>
+
+              <h3 class="h6 fw-bold mt-5 mb-3">Items Purchased</h3>
+
               <div
                 v-for="item in order.items"
                 :key="item.id"
-                class="d-flex justify-content-between align-items-center border-bottom py-3"
+                class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom py-3"
               >
                 <div class="d-flex align-items-center gap-3">
-                    <div class="order-cover-frame rounded bg-light">
-                        <img
-                        v-if="item.image_url"
-                        :src="item.image_url"
-                        :alt="`${item.title} game cover`"
-                        class="order-cover-image"
-                        />
+                  <div class="order-cover-frame rounded bg-light">
+                    <img
+                      v-if="item.image_url"
+                      :src="item.image_url"
+                      :alt="`${item.title} game cover`"
+                      class="order-cover-image"
+                    />
+                    <span v-else class="small text-muted text-center">
+                      No cover
+                    </span>
+                  </div>
 
-                        <span v-else aria-hidden="true">
-                        🎮
-                        </span>
-                    </div>
-
-                    <div>
-                        <p class="fw-semibold mb-1">
-                        {{ item.title }}
-                        </p>
-                  <p class="small text-muted mb-0">
-                    {{ item.platform }} · Quantity: {{ item.quantity }}
-                  </p>
-                    </div>
-                    </div>
-                
+                  <div>
+                    <p class="fw-semibold mb-1">{{ item.title }}</p>
+                    <p class="small text-muted mb-0">
+                      {{ item.platform }} · Quantity: {{ item.quantity }}
+                    </p>
+                  </div>
+                </div>
 
                 <p class="fw-semibold mb-0">
                   RM {{ (Number(item.price) * item.quantity).toFixed(2) }}
                 </p>
               </div>
 
-              <div class="mt-4">
-                <p class="small text-muted mb-1">
-                  Delivery Address
-                </p>
-                <p class="mb-3">
-                  {{ order.address }}
-                </p>
+              <div class="row g-4 mt-3">
+                <div class="col-12 col-lg-8">
+                  <p class="small text-muted mb-1">Delivery Address</p>
+                  <p class="mb-0">{{ order.address }}</p>
+                </div>
 
-                <p class="small text-muted mb-1">
-                  Payment Method
-                </p>
-                <p class="mb-0">
-                  {{ order.payment_method }}
-                </p>
+                <div class="col-12 col-lg-4">
+                  <p class="small text-muted mb-1">Payment Method</p>
+                  <p class="fw-semibold mb-0">{{ order.payment_method }}</p>
+                </div>
               </div>
             </div>
           </article>
